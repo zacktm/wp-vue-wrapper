@@ -26,8 +26,8 @@ function vue_wp_app_localize_settings() {
         'enableFrontend' => VUE_APP_ENABLE_FRONTEND,
         'enableBackend' => VUE_APP_ENABLE_BACKEND,
         'enableBackendGlobal' => VUE_APP_ENABLE_BACKEND_GLOBAL,
-        'devMode' => VUE_WP_APP_DEV_MODE,
-        'debugMode' => vue_wp_app_get_env('VUE_APP_DEBUG_MODE', false),
+        'devMode' => VUE_APP_DEV_MODE,
+        'debugMode' => vue_wp_app_get_env('VUE_APP_ENABLE_DEBUG', false),
         'menuSlug' => VUE_APP_MENU_SLUG,
         'menuSlugs' => vue_wp_app_get_menu_slugs(),
         'baseSlug' => VUE_APP_MENU_SLUG,
@@ -78,7 +78,7 @@ function vue_wp_app_get_settings() {
         'enableFrontend' => VUE_APP_ENABLE_FRONTEND,
         'enableBackend' => VUE_APP_ENABLE_BACKEND,
         'enableBackendGlobal' => VUE_APP_ENABLE_BACKEND_GLOBAL,
-        'devMode' => VUE_WP_APP_DEV_MODE,
+        'devMode' => VUE_APP_DEV_MODE,
         'debugMode' => vue_wp_app_get_env('VUE_APP_DEBUG_MODE', false)
     );
     
@@ -99,7 +99,7 @@ function vue_wp_app_update_settings($request) {
         'enableFrontend' => isset($params['enableFrontend']) ? (bool) $params['enableFrontend'] : VUE_APP_ENABLE_FRONTEND,
         'enableBackend' => isset($params['enableBackend']) ? (bool) $params['enableBackend'] : VUE_APP_ENABLE_BACKEND,
         'enableBackendGlobal' => isset($params['enableBackendGlobal']) ? (bool) $params['enableBackendGlobal'] : VUE_APP_ENABLE_BACKEND_GLOBAL,
-        'devMode' => isset($params['devMode']) ? (bool) $params['devMode'] : VUE_WP_APP_DEV_MODE,
+        'devMode' => isset($params['devMode']) ? (bool) $params['devMode'] : VUE_APP_DEV_MODE,
         'debugMode' => isset($params['debugMode']) ? (bool) $params['debugMode'] : vue_wp_app_get_env('VUE_APP_DEBUG_MODE', false)
     );
     

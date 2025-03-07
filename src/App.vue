@@ -43,6 +43,7 @@ export default {
     const settings = window.vueWpSettings || {}
     this.menuSlugs = settings.menuSlugs || [this.baseSlug]
     this.baseSlug = settings.baseSlug || this.baseSlug
+    this.debugMode = settings.debugMode || false
     
     // Generate routes from menu items
     if (settings.menuItems) {
@@ -74,12 +75,15 @@ export default {
       }
 
       // Debug logging
+      if (this.debugMode) {
       console.log('Plugin page check:', {
         page,
         isPluginPage: this.isPluginPage,
         menuSlugs: this.menuSlugs,
         routePath: this.getRoutePathFromSlug(page)
       })
+    }
+
     } else {
       this.currentPage = 'frontend'
     }

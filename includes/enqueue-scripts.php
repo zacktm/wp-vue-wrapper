@@ -29,7 +29,7 @@ function vue_wp_app_enqueue_scripts() {
             return;
         }
     }
-    if (VUE_WP_APP_DEV_MODE) {
+    if (VUE_APP_DEV_MODE) {
         // Development mode - use webpack dev server
         wp_enqueue_script(
             'vue-wp-app-js',

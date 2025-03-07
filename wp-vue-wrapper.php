@@ -20,12 +20,12 @@ define('VUE_WP_APP_URL', plugin_dir_url(__FILE__));
 require_once VUE_WP_APP_PATH . 'includes/env-loader.php';
 
 // Set development mode from .env
-define('VUE_WP_APP_DEV_MODE', vue_wp_app_get_env('VUE_WP_APP_DEV_MODE', true));
+define('VUE_APP_DEV_MODE', vue_wp_app_get_env('VUE_APP_DEV_MODE', true));
 define('VUE_APP_ENABLE_FRONTEND', vue_wp_app_get_env('VUE_APP_ENABLE_FRONTEND', true));
 define('VUE_APP_ENABLE_BACKEND', vue_wp_app_get_env('VUE_APP_ENABLE_BACKEND', true));
 define('VUE_APP_ENABLE_BACKEND_GLOBAL', vue_wp_app_get_env('VUE_APP_ENABLE_BACKEND_GLOBAL', false));
 define('VUE_APP_MENU_SLUG', vue_wp_app_get_env('VUE_APP_MENU_SLUG', 'vue-wp-app'));
-
+define('VUE_APP_ENABLE_DEBUG', vue_wp_app_get_env('VUE_APP_ENABLE_DEBUG', true));
 // Include plugin components
 require_once VUE_WP_APP_PATH . 'admin/admin-menu.php';
 require_once VUE_WP_APP_PATH . 'includes/enqueue-scripts.php';

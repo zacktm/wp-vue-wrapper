@@ -47,8 +47,9 @@ function vue_wp_app_admin_debug() {
     </script>
     <?php
 }
+if(VUE_APP_ENABLE_DEBUG){
 add_action('admin_footer', 'vue_wp_app_admin_debug');
-
+}
 // Frontend shortcode
 function vue_wp_app_shortcode() {
     return '<div id="vue-wp-app"></div>';
