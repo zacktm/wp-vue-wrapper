@@ -29,4 +29,5 @@ define('VUE_APP_MENU_SLUG', vue_wp_app_get_env('VUE_APP_MENU_SLUG', 'vue-wp-app'
 // Include plugin components
 require_once VUE_WP_APP_PATH . 'admin/admin-menu.php';
 require_once VUE_WP_APP_PATH . 'includes/enqueue-scripts.php';
-require_once VUE_WP_APP_PATH . 'includes/mount-points.php'; 
+require_once VUE_WP_APP_PATH . 'includes/mount-points.php';
+require_once VUE_WP_APP_PATH . 'includes/settings-api.php'; 

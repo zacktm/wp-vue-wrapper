@@ -14,7 +14,7 @@ function vue_wp_app_admin_menu() {
         'Vue WP App',           // Page title
         'Vue WP App',           // Menu title
         'manage_options',       // Capability required
-        'vue-wp-app',           // Menu slug
+        VUE_APP_MENU_SLUG,      // Menu slug from .env
         'vue_wp_app_page',      // Function to display the page
         'dashicons-admin-generic', // Icon (you can change this)
         30                      // Position in menu
