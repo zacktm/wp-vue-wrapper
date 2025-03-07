@@ -69,7 +69,7 @@
       <div v-if="saveStatus" class="save-status" :class="saveStatus.type">
         {{ saveStatus.message }}
       </div>
-      <button class="button button-primary" @click="saveSettings">Save Settings</button>
+      <!-- <button class="button button-primary" @click="saveSettings">Save Settings</button> -->
     </div>
   </div>
 </template>

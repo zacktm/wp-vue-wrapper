@@ -1,7 +1,19 @@
 <template>
   <div class="vue-wp-app">
     <!-- Admin Settings Page Component -->
-    <AdminSettings v-if="isAdmin && isPluginPage" />
+    <template v-if="isAdmin && isPluginPage">
+      <nav class="admin-nav" v-if="isPluginPage">
+        <router-link 
+          v-for="route in routes" 
+          :key="route.path" 
+          :to="route.path"
+          class="nav-link"
+        >
+          {{ route.name }}
+        </router-link>
+      </nav>
+      <router-view></router-view>
+    </template>
     
     <!-- Default Component for other contexts -->
     <div v-else class="default-view">
@@ -13,50 +25,77 @@
 </template>
 
 <script>
-import AdminSettings from './components/AdminSettings.vue'
-
 export default {
   name: 'App',
-  components: {
-    AdminSettings
-  },
   data() {
     return {
       message: 'Vue.js WordPress App',
       isAdmin: false,
       isPluginPage: false,
       currentPage: '',
-      menuSlug: 'vue-wp-app' // Default value
+      menuSlugs: [],
+      baseSlug: 'vue-wp-app',
+      routes: []
     }
   },
   created() {
-    // Get menu slug from settings if available
-    this.menuSlug = window.vueWpSettings?.menuSlug || 'vue-wp-app'
+    // Get settings from WordPress
+    const settings = window.vueWpSettings || {}
+    this.menuSlugs = settings.menuSlugs || [this.baseSlug]
+    this.baseSlug = settings.baseSlug || this.baseSlug
+    
+    // Generate routes from menu items
+    if (settings.menuItems) {
+      this.routes = settings.menuItems.map(item => ({
+        path: item.route,
+        name: item.title,
+        slug: item.slug
+      }))
+    }
     
     // Check if we're in the WordPress admin area
     this.isAdmin = window.location.href.includes('/wp-admin/')
     
-    // Check if we're on the plugin settings page
+    // Check if we're on any of the plugin pages
     if (this.isAdmin) {
       const urlParams = new URLSearchParams(window.location.search)
       const page = urlParams.get('page')
-      this.isPluginPage = page === this.menuSlug // Use the menu slug from settings
+      
+      // Check if current page is one of our plugin pages
+      this.isPluginPage = this.menuSlugs.includes(page)
       this.currentPage = page || 'dashboard'
+      
+      // If we're on a plugin page, update the router path
+      if (this.isPluginPage) {
+        const routePath = this.getRoutePathFromSlug(page)
+        if (routePath && routePath !== this.$route.path) {
+          this.$router.push(routePath)
+        }
+      }
+
+      // Debug logging
+      console.log('Plugin page check:', {
+        page,
+        isPluginPage: this.isPluginPage,
+        menuSlugs: this.menuSlugs,
+        routePath: this.getRoutePathFromSlug(page)
+      })
     } else {
       this.currentPage = 'frontend'
     }
-    
-    console.log('Vue App Created!', {
-      location: this.isAdmin ? 'WordPress Admin' : 'Frontend',
-      isPluginPage: this.isPluginPage,
-      page: this.currentPage,
-      menuSlug: this.menuSlug,
-      path: window.location.pathname,
-      timestamp: new Date().toISOString()
-    })
   },
-  mounted() {
-    console.log("App component mounted");
+  methods: {
+    getRoutePathFromSlug(slug) {
+      // Handle the main plugin page
+      if (slug === this.baseSlug) return '/'
+      
+      // Find matching route for subpages
+      const route = this.routes.find(r => 
+        slug === this.baseSlug + r.slug
+      )
+      
+      return route ? route.path : '/'
+    }
   }
 }
 </script>
@@ -68,6 +107,24 @@ export default {
   margin: 10px;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admin-nav {
+  margin-bottom: 20px;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.nav-link {
+  margin-right: 15px;
+  padding: 5px 10px;
+  text-decoration: none;
+  color: #444;
+}
+
+.nav-link.router-link-active {
+  color: #2271b1;
+  font-weight: bold;
 }
 
 .default-view {

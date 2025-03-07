@@ -18,6 +18,9 @@ function vue_wp_app_localize_settings() {
         return;
     }
     
+    // Get menu configuration
+    $menu_items = vue_wp_app_get_menu_config();
+    
     // Get current settings
     $settings = array(
         'enableFrontend' => VUE_APP_ENABLE_FRONTEND,
@@ -26,6 +29,9 @@ function vue_wp_app_localize_settings() {
         'devMode' => VUE_WP_APP_DEV_MODE,
         'debugMode' => vue_wp_app_get_env('VUE_APP_DEBUG_MODE', false),
         'menuSlug' => VUE_APP_MENU_SLUG,
+        'menuSlugs' => vue_wp_app_get_menu_slugs(),
+        'baseSlug' => VUE_APP_MENU_SLUG,
+        'menuItems' => $menu_items,  // Pass the full menu configuration to Vue
         'apiUrl' => rest_url('vue-wp-app/v1'),
         'nonce' => wp_create_nonce('wp_rest')
     );

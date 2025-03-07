@@ -4,6 +4,9 @@
  * Handles loading of Vue.js assets in WordPress
  */
 
+// Add at the top of the file
+require_once plugin_dir_path(__FILE__) . 'menu-config.php';
+
 // Prevent direct access to this file
 if (!defined('ABSPATH')) {
     exit;
@@ -11,9 +14,18 @@ if (!defined('ABSPATH')) {
 
 // Enqueue scripts and styles for both admin and frontend
 function vue_wp_app_enqueue_scripts() {
-    if(!VUE_APP_ENABLE_BACKEND_GLOBAL){
-        // check if the current page is admin plugin page or not
-        if(!is_admin() || !isset($_GET['page']) || $_GET['page'] != VUE_APP_MENU_SLUG){
+    // If backend is not globally enabled
+    if(!VUE_APP_ENABLE_BACKEND_GLOBAL) {
+        // Get all menu slugs
+        $menu_slugs = vue_wp_app_get_menu_slugs();
+        
+        // Check if the current page is one of our admin pages
+        $is_plugin_page = is_admin() && 
+                         isset($_GET['page']) && 
+                         in_array($_GET['page'], $menu_slugs);
+        
+        // If not admin or not one of our pages, return
+        if(!$is_plugin_page) {
             return;
         }
     }
