@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import './assets/tailwind.css'
 
 // Near the top of the file, add a timestamp for debugging
 const initTime = new Date().toISOString();

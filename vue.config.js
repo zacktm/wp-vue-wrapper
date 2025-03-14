@@ -41,7 +41,12 @@ module.exports = defineConfig({
     ]
   },
   css: {
-    extract: false // This will include CSS in the main bundle
+    extract: false, // This will include CSS in the main bundle
+    loaderOptions: {
+      postcss: {
+        // PostCSS options are now in postcss.config.js
+      }
+    }
   },
   publicPath: process.env.NODE_ENV === 'production'
     ? '/wp-content/plugins/smart-press-pro/dist/'
