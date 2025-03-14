@@ -61,6 +61,12 @@ function vue_wp_app_enqueue_scripts() {
             '1.0.0'
         );
     }
+
+    // Add this to make sure the nonce is available in the Vue app
+    wp_localize_script('vue-wp-app-js', 'wpApiSettings', array(
+        'root' => esc_url_raw(rest_url()),
+        'nonce' => wp_create_nonce('wp_rest')
+    ));
 }
 
 // Hook for frontend

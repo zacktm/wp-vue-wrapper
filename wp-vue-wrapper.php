@@ -31,3 +31,4 @@ require_once VUE_WP_APP_PATH . 'admin/admin-menu.php';
 require_once VUE_WP_APP_PATH . 'includes/enqueue-scripts.php';
 require_once VUE_WP_APP_PATH . 'includes/mount-points.php';
 require_once VUE_WP_APP_PATH . 'includes/settings-api.php'; 
+require_once VUE_WP_APP_PATH . 'includes/custom-fields.php'; 
