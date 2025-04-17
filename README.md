@@ -62,12 +62,18 @@ The tool will:
    - Text domain (e.g., `customer_portal`)
    - Constants prefix (e.g., `CUSTOMER_PORTAL_`)
    - App constants prefix (e.g., `CUSTOMER_PORTAL_APP_`)
+   - REST API prefix (e.g., `customer-portal`)
+   - Script handle prefix (e.g., `customer-portal-`)
+   - JavaScript global variable (e.g., `customerPortalSettings`)
 
 2. Replace all occurrences of the default prefixes:
    - Default function prefix: `vue_wp_app_`
    - Default text domain: `wp-vue-wrapper`
    - Default constants prefix: `VUE_WP_APP_`
    - Default app constants prefix: `VUE_APP_`
+   - Default REST API prefix: `vue-wp-app`
+   - Default script handle prefix: `vue-wp-`
+   - Default JavaScript global: `vueWpSettings`
 
 3. Rename the main plugin file to match your new prefix
 
@@ -102,7 +108,6 @@ The plugin provides several WordPress filters and actions for extending function
 
 - `wp_vue_wrapper_shortcode_atts` - Filter shortcode attributes
 - `wp_vue_wrapper_container` - Filter the container HTML
-
 
 ## Credits
 

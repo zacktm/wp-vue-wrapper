@@ -63,7 +63,7 @@ export default {
       this.error = null;
       
       try {        
-        const response = await fetch(`/wp-json/${process.env.VUE_APP_MENU_SLUG}/v1/custom-fields`, {
+        const response = await fetch(`/wp-json/${window.vueWpSettings?.menuSlug}/v1/custom-fields`, {
           method: 'GET',
           headers: {'Content-Type': 'application/json',
             'X-WP-Nonce': window.wpApiSettings?.nonce || ''
@@ -91,7 +91,7 @@ export default {
       this.saveSuccess = false;
       
       try {
-        const response = await fetch(`/wp-json/${process.env.VUE_APP_MENU_SLUG}/v1/custom-fields`, {
+        const response = await fetch(`/wp-json/${window.vueWpSettings?.menuSlug}/v1/custom-fields`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

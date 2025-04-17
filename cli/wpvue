@@ -12,6 +12,16 @@ OLD_PLUGIN_NAME="wp-vue-wrapper"
 OLD_TEXT_DOMAIN="wp-vue-wrapper"
 OLD_CONSTANTS_PREFIX="VUE_WP_APP"
 OLD_APP_CONSTANTS_PREFIX="VUE_APP"
+OLD_REST_PREFIX="vue-wp-app"
+OLD_SCRIPT_PREFIX="vue-wp"
+OLD_JS_GLOBAL="vueWpSettings"
+OLD_MOUNT_ID="vue-wp-app"
+OLD_SHORTCODE="vue_wp_app"
+OLD_MENU_SLUG="vue-wp-app"
+
+# Create backup directory with timestamp
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+BACKUP_DIR="$PLUGIN_DIR/backup_$TIMESTAMP"
 
 # Function to convert plugin name to a valid prefix
 function to_prefix() {
@@ -19,10 +29,48 @@ function to_prefix() {
     echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[ -]/_/g' | sed 's/[^a-z0-9_]//g'
 }
 
+# Function to convert to kebab case (for REST endpoints, script handles, and HTML IDs)
+function to_kebab_case() {
+    # Convert to lowercase, replace underscores and spaces with dashes, remove special chars
+    echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[_ ]/-/g' | sed 's/[^a-z0-9-]//g'
+}
+
+# Function to convert to camelCase (for JavaScript variables)
+function to_camel_case() {
+    # First convert to snake_case
+    local snake=$(to_prefix "$1")
+    # Then convert to camelCase by replacing _x with X
+    echo "$snake" | sed -E 's/_([a-z])/\U\1/g'
+}
+
 # Function to convert prefix to constant format
 function to_constant_prefix() {
     # Convert to uppercase
     echo "$1" | tr '[:lower:]' '[:upper:]'
+}
+
+# Function to create a backup of the entire plugin
+function create_backup() {
+    echo "Creating backup in: $BACKUP_DIR"
+    
+    # Create backup directory
+    mkdir -p "$BACKUP_DIR"
+    
+    # Copy all files except node_modules and backup directories
+    rsync -a --exclude='node_modules' --exclude='backup_*' "$PLUGIN_DIR/" "$BACKUP_DIR/"
+    
+    echo "Backup created successfully."
+}
+
+# Function to restore from backup
+function restore_backup() {
+    if [ -d "$BACKUP_DIR" ]; then
+        echo "Restoring from backup..."
+        rsync -a --delete "$BACKUP_DIR/" "$PLUGIN_DIR/"
+        echo "Restore completed."
+    else
+        echo "Error: Backup directory not found."
+    fi
 }
 
 # Function to show help
@@ -33,6 +81,7 @@ function show_help() {
     echo ""
     echo "Commands:"
     echo "  init [new-plugin-name]    Initialize a new plugin with the given name"
+    echo "  restore                   Restore from the most recent backup"
     echo ""
     echo "Example:"
     echo "  wpvue init \"My Awesome Plugin\""
@@ -51,6 +100,75 @@ function confirm() {
     done
 }
 
+# Function to verify replacements didn't break anything
+function verify_replacements() {
+    echo "Verifying replacements..."
+    local errors=0
+    
+    # Check for PHP syntax errors
+    for file in $(find "$PLUGIN_DIR" -name "*.php" -type f); do
+        if ! php -l "$file" > /dev/null 2>&1; then
+            echo "PHP syntax error in: $file"
+            errors=$((errors + 1))
+        fi
+    done
+    
+    # Check if main JS files exist (might be in dist)
+    if [ -d "$PLUGIN_DIR/dist" ] && [ ! -f "$PLUGIN_DIR/dist/js/app.js" ]; then
+        echo "Warning: Main JavaScript file not found after replacement."
+        errors=$((errors + 1))
+    fi
+    
+    # Verify all functions, constants and variables have been properly renamed
+    echo "Looking for any missed replacements..."
+    
+    # Check for old prefixes in PHP files
+    if grep -r "${OLD_PREFIX}_" --include="*.php" "$PLUGIN_DIR" > /dev/null; then
+        echo "Warning: Old function prefixes still found in PHP files."
+        errors=$((errors + 1))
+    fi
+    
+    # Check for old constants in PHP files
+    if grep -r "${OLD_CONSTANTS_PREFIX}_" --include="*.php" "$PLUGIN_DIR" > /dev/null; then
+        echo "Warning: Old constants still found in PHP files."
+        errors=$((errors + 1))
+    fi
+    
+    # Check for old app constants in PHP files
+    if grep -r "${OLD_APP_CONSTANTS_PREFIX}_" --include="*.php" "$PLUGIN_DIR" > /dev/null; then
+        echo "Warning: Old app constants still found in PHP files."
+        errors=$((errors + 1))
+    fi
+    
+    # Check for old mount ID in PHP files
+    if grep -r "id=\"${OLD_MOUNT_ID}\"" --include="*.php" "$PLUGIN_DIR" > /dev/null; then
+        echo "Warning: Old mount ID still found in PHP files."
+        errors=$((errors + 1))
+    fi
+    
+    # Check for old mount ID in JavaScript files
+    if grep -r "'#${OLD_MOUNT_ID}'" --include="*.js" "$PLUGIN_DIR/src" > /dev/null || 
+       grep -r "\"#${OLD_MOUNT_ID}\"" --include="*.js" "$PLUGIN_DIR/src" > /dev/null ||
+       grep -r "mount('#${OLD_MOUNT_ID}')" --include="*.js" "$PLUGIN_DIR/src" > /dev/null; then
+        echo "Warning: Old mount ID still found in JavaScript files."
+        errors=$((errors + 1))
+    fi
+    
+    # Check for old menu slug in JavaScript files
+    if grep -r "${OLD_MENU_SLUG}" --include="*.js" --include="*.vue" "$PLUGIN_DIR/src" > /dev/null; then
+        echo "Warning: Old menu slug still found in JavaScript files."
+        errors=$((errors + 1))
+    fi
+    
+    if [ $errors -gt 0 ]; then
+        echo "Found $errors potential issues after replacement."
+        return 1
+    else
+        echo "No syntax errors or missed replacements detected."
+        return 0
+    fi
+}
+
 # Initialize a new plugin with the given name
 function init() {
     if [ -z "$1" ]; then
@@ -58,12 +176,18 @@ function init() {
         show_help
         exit 1
     fi
-
+    
     NEW_PLUGIN_NAME="$1"
     NEW_PREFIX=$(to_prefix "$NEW_PLUGIN_NAME")
     NEW_TEXT_DOMAIN="$NEW_PREFIX"
     NEW_CONSTANTS_PREFIX=$(to_constant_prefix "$NEW_PREFIX")
     NEW_APP_CONSTANTS_PREFIX="${NEW_CONSTANTS_PREFIX%_}_APP"
+    NEW_REST_PREFIX=$(to_kebab_case "$NEW_PLUGIN_NAME")
+    NEW_SCRIPT_PREFIX=$(to_kebab_case "$NEW_PLUGIN_NAME")
+    NEW_JS_GLOBAL=$(to_camel_case "$NEW_PLUGIN_NAME")Settings
+    NEW_MOUNT_ID=$(to_kebab_case "$NEW_PLUGIN_NAME")-app
+    NEW_SHORTCODE=$(to_prefix "$NEW_PLUGIN_NAME")
+    NEW_MENU_SLUG=$(to_kebab_case "$NEW_PLUGIN_NAME")
     
     echo "Plugin Initialization Summary"
     echo "----------------------------"
@@ -72,6 +196,12 @@ function init() {
     echo "Text domain: $NEW_TEXT_DOMAIN"
     echo "Constants prefix: $NEW_CONSTANTS_PREFIX"
     echo "App constants prefix: $NEW_APP_CONSTANTS_PREFIX"
+    echo "REST API prefix: $NEW_REST_PREFIX"
+    echo "Script handle prefix: $NEW_SCRIPT_PREFIX"
+    echo "JavaScript global: $NEW_JS_GLOBAL"
+    echo "Mount element ID: $NEW_MOUNT_ID"
+    echo "Shortcode: [$NEW_SHORTCODE]"
+    echo "Menu slug: $NEW_MENU_SLUG"
     echo ""
     echo "The following changes will be made:"
     echo "- Rename main plugin file: $OLD_PLUGIN_NAME.php → $NEW_PREFIX.php"
@@ -79,12 +209,21 @@ function init() {
     echo "- Replace constants: ${OLD_CONSTANTS_PREFIX}_ → ${NEW_CONSTANTS_PREFIX}_"
     echo "- Replace app constants: ${OLD_APP_CONSTANTS_PREFIX}_ → ${NEW_APP_CONSTANTS_PREFIX}_"
     echo "- Replace text domain: $OLD_TEXT_DOMAIN → $NEW_TEXT_DOMAIN"
+    echo "- Replace REST API endpoints: $OLD_REST_PREFIX → $NEW_REST_PREFIX"
+    echo "- Replace script handles: $OLD_SCRIPT_PREFIX → $NEW_SCRIPT_PREFIX"
+    echo "- Replace JavaScript globals: $OLD_JS_GLOBAL → $NEW_JS_GLOBAL"
+    echo "- Replace mount element ID: $OLD_MOUNT_ID → $NEW_MOUNT_ID"
+    echo "- Replace shortcode: [$OLD_SHORTCODE] → [$NEW_SHORTCODE]"
+    echo "- Replace menu slug: $OLD_MENU_SLUG → $NEW_MENU_SLUG"
     echo ""
     
     if ! confirm "Do you want to continue?"; then
         echo "Operation cancelled."
         exit 0
     fi
+    
+    # Create backup before making any changes
+    create_backup
     
     echo "Proceeding with plugin initialization..."
     echo ""
@@ -101,48 +240,172 @@ function init() {
     # Update plugin name and text domain in main plugin file
     if [ -f "$PLUGIN_DIR/$NEW_PREFIX.php" ]; then
         echo "Updating plugin information..."
-        sed -i.bak "s/Plugin Name: $OLD_PLUGIN_NAME/Plugin Name: $NEW_PLUGIN_NAME/g" "$PLUGIN_DIR/$NEW_PREFIX.php"
-        sed -i.bak "s/Text Domain: $OLD_TEXT_DOMAIN/Text Domain: $NEW_TEXT_DOMAIN/g" "$PLUGIN_DIR/$NEW_PREFIX.php"
+        sed -i.bak "s|Plugin Name: $OLD_PLUGIN_NAME|Plugin Name: $NEW_PLUGIN_NAME|g" "$PLUGIN_DIR/$NEW_PREFIX.php"
+        sed -i.bak "s|Text Domain: $OLD_TEXT_DOMAIN|Text Domain: $NEW_TEXT_DOMAIN|g" "$PLUGIN_DIR/$NEW_PREFIX.php"
+        # Update menu slug constant
+        sed -i.bak "s|'$OLD_MENU_SLUG'|'$NEW_MENU_SLUG'|g" "$PLUGIN_DIR/$NEW_PREFIX.php"
         rm "$PLUGIN_DIR/$NEW_PREFIX.php.bak"
     fi
     
     echo "Replacing all occurrences in PHP files..."
     
     # Replace function prefixes
-    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/${OLD_PREFIX}_/${NEW_PREFIX}_/g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|${OLD_PREFIX}_|${NEW_PREFIX}_|g"
     
     # Replace text domain
-    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/'${OLD_TEXT_DOMAIN}'/'${NEW_TEXT_DOMAIN}'/g"
-    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/\"${OLD_TEXT_DOMAIN}\"/\"${NEW_TEXT_DOMAIN}\"/g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|'${OLD_TEXT_DOMAIN}'|'${NEW_TEXT_DOMAIN}'|g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|\"${OLD_TEXT_DOMAIN}\"|\"${NEW_TEXT_DOMAIN}\"|g"
     
     # Replace constants
-    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/${OLD_CONSTANTS_PREFIX}_/${NEW_CONSTANTS_PREFIX}_/g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|${OLD_CONSTANTS_PREFIX}_|${NEW_CONSTANTS_PREFIX}_|g"
     
-    # Replace app constants with VUE_APP_ prefix
-    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/${OLD_APP_CONSTANTS_PREFIX}_/${NEW_APP_CONSTANTS_PREFIX}_/g"
+    # Replace app constants
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|${OLD_APP_CONSTANTS_PREFIX}_|${NEW_APP_CONSTANTS_PREFIX}_|g"
+    
+    # Replace REST API endpoints
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|'${OLD_REST_PREFIX}/|'${NEW_REST_PREFIX}/|g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|\"${OLD_REST_PREFIX}/|\"${NEW_REST_PREFIX}/|g"
+    
+    # Replace script handles
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|'${OLD_SCRIPT_PREFIX}-|'${NEW_SCRIPT_PREFIX}-|g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|\"${OLD_SCRIPT_PREFIX}-|\"${NEW_SCRIPT_PREFIX}-|g"
+    
+    # Replace JavaScript global variable
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|window\.${OLD_JS_GLOBAL}|window.${NEW_JS_GLOBAL}|g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|var ${OLD_JS_GLOBAL}|var ${NEW_JS_GLOBAL}|g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|const ${OLD_JS_GLOBAL}|const ${NEW_JS_GLOBAL}|g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|let ${OLD_JS_GLOBAL}|let ${NEW_JS_GLOBAL}|g"
+    
+    # Replace mount element ID in PHP files
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|id=\"${OLD_MOUNT_ID}\"|id=\"${NEW_MOUNT_ID}\"|g"
+    
+    # Replace shortcode
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|'${OLD_SHORTCODE}'|'${NEW_SHORTCODE}'|g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|\"${OLD_SHORTCODE}\"|\"${NEW_SHORTCODE}\"|g"
+    
+    # Replace menu slug
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|'${OLD_MENU_SLUG}'|'${NEW_MENU_SLUG}'|g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|\"${OLD_MENU_SLUG}\"|\"${NEW_MENU_SLUG}\"|g"
+    
+    # Handle JavaScript files more carefully
+    if [ -d "$PLUGIN_DIR/src" ]; then
+        echo "Replacing in JavaScript files..."
+        
+        # Replace mount element selector in JS files (.mount('#vue-wp-app'))
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|mount('\\#${OLD_MOUNT_ID}')|mount('#${NEW_MOUNT_ID}')|g"
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|mount(\"\\#${OLD_MOUNT_ID}\")|mount(\"#${NEW_MOUNT_ID}\")|g"
+        
+        # Replace mount element selector references (without mount function)
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|'#${OLD_MOUNT_ID}'|'#${NEW_MOUNT_ID}'|g"
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|\"#${OLD_MOUNT_ID}\"|\"#${NEW_MOUNT_ID}\"|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|'#${OLD_MOUNT_ID}'|'#${NEW_MOUNT_ID}'|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|\"#${OLD_MOUNT_ID}\"|\"#${NEW_MOUNT_ID}\"|g"
+        
+        # Replace mount element ID without # (getElementById)
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|getElementById('${OLD_MOUNT_ID}')|getElementById('${NEW_MOUNT_ID}')|g"
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|getElementById(\"${OLD_MOUNT_ID}\")|getElementById(\"${NEW_MOUNT_ID}\")|g"
+        
+        # Global variable in window object
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|window\.${OLD_JS_GLOBAL}|window.${NEW_JS_GLOBAL}|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|window\.${OLD_JS_GLOBAL}|window.${NEW_JS_GLOBAL}|g"
+        
+        # Direct references
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|${OLD_JS_GLOBAL}\.|${NEW_JS_GLOBAL}.|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|${OLD_JS_GLOBAL}\.|${NEW_JS_GLOBAL}.|g"
+        
+        # Variable declarations
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|const ${OLD_JS_GLOBAL}|const ${NEW_JS_GLOBAL}|g"
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|let ${OLD_JS_GLOBAL}|let ${NEW_JS_GLOBAL}|g"
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|var ${OLD_JS_GLOBAL}|var ${NEW_JS_GLOBAL}|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|const ${OLD_JS_GLOBAL}|const ${NEW_JS_GLOBAL}|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|let ${OLD_JS_GLOBAL}|let ${NEW_JS_GLOBAL}|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|var ${OLD_JS_GLOBAL}|var ${NEW_JS_GLOBAL}|g"
+        
+        # Destructuring
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|const { |const { |g; s|} = ${OLD_JS_GLOBAL}|} = ${NEW_JS_GLOBAL}|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|const { |const { |g; s|} = ${OLD_JS_GLOBAL}|} = ${NEW_JS_GLOBAL}|g"
+        
+        # Environment variables in Vue files (process.env.VUE_APP_*)
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|process.env.${OLD_APP_CONSTANTS_PREFIX}_|process.env.${NEW_APP_CONSTANTS_PREFIX}_|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|process.env.${OLD_APP_CONSTANTS_PREFIX}_|process.env.${NEW_APP_CONSTANTS_PREFIX}_|g"
+        
+        # Handle menu slug in JavaScript files
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|'${OLD_MENU_SLUG}'|'${NEW_MENU_SLUG}'|g"
+        find "$PLUGIN_DIR/src" -name "*.js" -type f -print0 | xargs -0 sed -i.bak "s|\"${OLD_MENU_SLUG}\"|\"${NEW_MENU_SLUG}\"|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|'${OLD_MENU_SLUG}'|'${NEW_MENU_SLUG}'|g"
+        find "$PLUGIN_DIR/src" -name "*.vue" -type f -print0 | xargs -0 sed -i.bak "s|\"${OLD_MENU_SLUG}\"|\"${NEW_MENU_SLUG}\"|g"
+    fi
     
     # Update paths in include statements
     if [ "$OLD_PLUGIN_NAME" != "$NEW_PREFIX" ]; then
-        find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/$OLD_PLUGIN_NAME.php/$NEW_PREFIX.php/g"
+        find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s|$OLD_PLUGIN_NAME.php|$NEW_PREFIX.php|g"
     fi
     
     # Clean up backup files
     find "$PLUGIN_DIR" -name "*.bak" -type f -delete
     
+    # Verify that changes didn't break anything
+    if ! verify_replacements; then
+        echo ""
+        echo "⚠️ Warning: Some potential issues were detected after replacement."
+        if confirm "Would you like to restore from backup?"; then
+            restore_backup
+            echo "Restored to original state. Please check your code and try again with a different approach."
+            exit 1
+        else
+            echo "Continuing despite potential issues. Please test your plugin thoroughly."
+        fi
+    fi
+    
     echo ""
     echo "✅ Plugin initialization complete!"
     echo "Plugin name: $NEW_PLUGIN_NAME"
-    echo "Plugin prefix: $NEW_PREFIX"
+    echo "Function prefix: $NEW_PREFIX"
     echo "Text domain: $NEW_TEXT_DOMAIN"
     echo "Constants prefix: $NEW_CONSTANTS_PREFIX"
     echo "App constants prefix: $NEW_APP_CONSTANTS_PREFIX"
+    echo "REST API prefix: $NEW_REST_PREFIX"
+    echo "Script handle prefix: $NEW_SCRIPT_PREFIX"
+    echo "JavaScript global: $NEW_JS_GLOBAL"
+    echo "Mount element ID: $NEW_MOUNT_ID"
+    echo "Shortcode: [$NEW_SHORTCODE]"
+    echo "Menu slug: $NEW_MENU_SLUG"
     echo ""
+    echo "A backup was created in: $BACKUP_DIR"
+    echo "If you encounter any issues, you can restore from this backup using:"
+    echo "./wpvue restore"
+    echo ""
+    echo "⚠️ IMPORTANT: You need to rebuild your Vue app to apply the changes:"
+    echo "npm run build"
+    echo ""
+}
+
+# Function to restore from most recent backup
+function restore_from_latest() {
+    # Find the most recent backup directory
+    local latest_backup=$(find "$PLUGIN_DIR" -maxdepth 1 -name "backup_*" -type d | sort -r | head -n 1)
+    
+    if [ -z "$latest_backup" ]; then
+        echo "Error: No backup directories found."
+        exit 1
+    fi
+    
+    echo "Found latest backup: $latest_backup"
+    if confirm "Would you like to restore from this backup?"; then
+        echo "Restoring from backup..."
+        rsync -a --delete --exclude='backup_*' "$latest_backup/" "$PLUGIN_DIR/"
+        echo "Restore completed successfully."
+    else
+        echo "Restore cancelled."
+    fi
 }
 
 # Main CLI logic
 if [ "$1" == "init" ]; then
     shift
     init "$@"
+elif [ "$1" == "restore" ]; then
+    restore_from_latest
 elif [ "$1" == "help" ] || [ "$1" == "--help" ] || [ "$1" == "-h" ] || [ -z "$1" ]; then
     show_help
 else
