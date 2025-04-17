@@ -1,0 +1,152 @@
+#!/bin/bash
+
+# wpvue CLI tool for the wp-vue-wrapper plugin
+# Usage: ./wpvue init [new-plugin-name]
+
+set -e
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PLUGIN_DIR="$(dirname "$SCRIPT_DIR")"
+OLD_PREFIX="vue_wp_app"
+OLD_PLUGIN_NAME="wp-vue-wrapper"
+OLD_TEXT_DOMAIN="wp-vue-wrapper"
+OLD_CONSTANTS_PREFIX="VUE_WP_APP"
+OLD_APP_CONSTANTS_PREFIX="VUE_APP"
+
+# Function to convert plugin name to a valid prefix
+function to_prefix() {
+    # Convert to lowercase, replace dashes and spaces with underscores, remove special chars
+    echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[ -]/_/g' | sed 's/[^a-z0-9_]//g'
+}
+
+# Function to convert prefix to constant format
+function to_constant_prefix() {
+    # Convert to uppercase
+    echo "$1" | tr '[:lower:]' '[:upper:]'
+}
+
+# Function to show help
+function show_help() {
+    echo "WP Vue Wrapper CLI Tool"
+    echo "-----------------------"
+    echo "Usage: wpvue init [new-plugin-name]"
+    echo ""
+    echo "Commands:"
+    echo "  init [new-plugin-name]    Initialize a new plugin with the given name"
+    echo ""
+    echo "Example:"
+    echo "  wpvue init \"My Awesome Plugin\""
+    echo ""
+}
+
+# Function to get user confirmation
+function confirm() {
+    while true; do
+        read -p "$1 [y/n]: " yn
+        case $yn in
+            [Yy]* ) return 0;;
+            [Nn]* ) return 1;;
+            * ) echo "Please answer yes (y) or no (n).";;
+        esac
+    done
+}
+
+# Initialize a new plugin with the given name
+function init() {
+    if [ -z "$1" ]; then
+        echo "Error: Plugin name is required"
+        show_help
+        exit 1
+    fi
+
+    NEW_PLUGIN_NAME="$1"
+    NEW_PREFIX=$(to_prefix "$NEW_PLUGIN_NAME")
+    NEW_TEXT_DOMAIN="$NEW_PREFIX"
+    NEW_CONSTANTS_PREFIX=$(to_constant_prefix "$NEW_PREFIX")
+    NEW_APP_CONSTANTS_PREFIX="${NEW_CONSTANTS_PREFIX%_}_APP"
+    
+    echo "Plugin Initialization Summary"
+    echo "----------------------------"
+    echo "Plugin name: $NEW_PLUGIN_NAME"
+    echo "Function prefix: $NEW_PREFIX"
+    echo "Text domain: $NEW_TEXT_DOMAIN"
+    echo "Constants prefix: $NEW_CONSTANTS_PREFIX"
+    echo "App constants prefix: $NEW_APP_CONSTANTS_PREFIX"
+    echo ""
+    echo "The following changes will be made:"
+    echo "- Rename main plugin file: $OLD_PLUGIN_NAME.php → $NEW_PREFIX.php"
+    echo "- Replace function prefixes: ${OLD_PREFIX}_ → ${NEW_PREFIX}_"
+    echo "- Replace constants: ${OLD_CONSTANTS_PREFIX}_ → ${NEW_CONSTANTS_PREFIX}_"
+    echo "- Replace app constants: ${OLD_APP_CONSTANTS_PREFIX}_ → ${NEW_APP_CONSTANTS_PREFIX}_"
+    echo "- Replace text domain: $OLD_TEXT_DOMAIN → $NEW_TEXT_DOMAIN"
+    echo ""
+    
+    if ! confirm "Do you want to continue?"; then
+        echo "Operation cancelled."
+        exit 0
+    fi
+    
+    echo "Proceeding with plugin initialization..."
+    echo ""
+    
+    # Rename main plugin file if needed
+    if [ "$OLD_PLUGIN_NAME" != "$NEW_PREFIX" ]; then
+        NEW_FILENAME="$NEW_PREFIX.php"
+        echo "Renaming main plugin file to $NEW_FILENAME"
+        if [ -f "$PLUGIN_DIR/$OLD_PLUGIN_NAME.php" ]; then
+            mv "$PLUGIN_DIR/$OLD_PLUGIN_NAME.php" "$PLUGIN_DIR/$NEW_FILENAME"
+        fi
+    fi
+    
+    # Update plugin name and text domain in main plugin file
+    if [ -f "$PLUGIN_DIR/$NEW_PREFIX.php" ]; then
+        echo "Updating plugin information..."
+        sed -i.bak "s/Plugin Name: $OLD_PLUGIN_NAME/Plugin Name: $NEW_PLUGIN_NAME/g" "$PLUGIN_DIR/$NEW_PREFIX.php"
+        sed -i.bak "s/Text Domain: $OLD_TEXT_DOMAIN/Text Domain: $NEW_TEXT_DOMAIN/g" "$PLUGIN_DIR/$NEW_PREFIX.php"
+        rm "$PLUGIN_DIR/$NEW_PREFIX.php.bak"
+    fi
+    
+    echo "Replacing all occurrences in PHP files..."
+    
+    # Replace function prefixes
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/${OLD_PREFIX}_/${NEW_PREFIX}_/g"
+    
+    # Replace text domain
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/'${OLD_TEXT_DOMAIN}'/'${NEW_TEXT_DOMAIN}'/g"
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/\"${OLD_TEXT_DOMAIN}\"/\"${NEW_TEXT_DOMAIN}\"/g"
+    
+    # Replace constants
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/${OLD_CONSTANTS_PREFIX}_/${NEW_CONSTANTS_PREFIX}_/g"
+    
+    # Replace app constants with VUE_APP_ prefix
+    find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/${OLD_APP_CONSTANTS_PREFIX}_/${NEW_APP_CONSTANTS_PREFIX}_/g"
+    
+    # Update paths in include statements
+    if [ "$OLD_PLUGIN_NAME" != "$NEW_PREFIX" ]; then
+        find "$PLUGIN_DIR" -name "*.php" -type f -print0 | xargs -0 sed -i.bak "s/$OLD_PLUGIN_NAME.php/$NEW_PREFIX.php/g"
+    fi
+    
+    # Clean up backup files
+    find "$PLUGIN_DIR" -name "*.bak" -type f -delete
+    
+    echo ""
+    echo "✅ Plugin initialization complete!"
+    echo "Plugin name: $NEW_PLUGIN_NAME"
+    echo "Plugin prefix: $NEW_PREFIX"
+    echo "Text domain: $NEW_TEXT_DOMAIN"
+    echo "Constants prefix: $NEW_CONSTANTS_PREFIX"
+    echo "App constants prefix: $NEW_APP_CONSTANTS_PREFIX"
+    echo ""
+}
+
+# Main CLI logic
+if [ "$1" == "init" ]; then
+    shift
+    init "$@"
+elif [ "$1" == "help" ] || [ "$1" == "--help" ] || [ "$1" == "-h" ] || [ -z "$1" ]; then
+    show_help
+else
+    echo "Unknown command: $1"
+    show_help
+    exit 1
+fi 

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Wrapper script to call the main CLI tool
+# This allows running the tool directly from the plugin root
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# Make the CLI script executable (in case it's not)
+chmod +x "$SCRIPT_DIR/cli/wpvue"
+
+# Call the CLI script with all the arguments passed to this script
+"$SCRIPT_DIR/cli/wpvue" "$@" 

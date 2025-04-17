@@ -35,6 +35,46 @@ You can customize the container element and pass additional attributes:
 
 The plugin uses environment variables for configuration. Create a `.env` file in the plugin root directory with your settings:
 
+## CLI Tool
+
+The plugin includes a command-line tool for easy customization of the plugin name and prefixes. This tool allows you to quickly rename the plugin and update all function names, constants, and text domains to match your branding.
+
+### Usage
+
+From the plugin directory, run:
+
+```bash
+./wpvue init "Your Plugin Name"
+```
+
+For example:
+
+```bash
+./wpvue init "Customer Portal"
+```
+
+### What the CLI Tool Does
+
+The tool will:
+
+1. Generate appropriate prefixes based on your plugin name:
+   - Function prefix (e.g., `customer_portal_`)
+   - Text domain (e.g., `customer_portal`)
+   - Constants prefix (e.g., `CUSTOMER_PORTAL_`)
+   - App constants prefix (e.g., `CUSTOMER_PORTAL_APP_`)
+
+2. Replace all occurrences of the default prefixes:
+   - Default function prefix: `vue_wp_app_`
+   - Default text domain: `wp-vue-wrapper`
+   - Default constants prefix: `VUE_WP_APP_`
+   - Default app constants prefix: `VUE_APP_`
+
+3. Rename the main plugin file to match your new prefix
+
+### Confirmation
+
+Before making any changes, the tool will display a summary of all replacements and ask for confirmation. This gives you a chance to review the changes before they are applied.
+
 ## Development
 
 ### Prerequisites
@@ -63,9 +103,6 @@ The plugin provides several WordPress filters and actions for extending function
 - `wp_vue_wrapper_shortcode_atts` - Filter shortcode attributes
 - `wp_vue_wrapper_container` - Filter the container HTML
 
-## License
-
-This project is licensed under the GPL v2 or later.
 
 ## Credits
 

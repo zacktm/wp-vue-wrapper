@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class SmartPress_Custom_Fields {
+class vue_wp_app_Custom_Fields {
     
     private static $instance = null;
     private $option_name = '';
@@ -214,9 +214,9 @@ class SmartPress_Custom_Fields {
 }
 
 // Initialize the class
-SmartPress_Custom_Fields::get_instance();
+vue_wp_app_Custom_Fields::get_instance();
 
 // Helper function to get custom fields
-function smartpress_get_custom_field($key, $default = '') {
-    return SmartPress_Custom_Fields::get_instance()->get_field($key, $default);
+function vue_wp_app_get_custom_field($key, $default = '') {
+    return vue_wp_app_Custom_Fields::get_instance()->get_field($key, $default);
 } 
