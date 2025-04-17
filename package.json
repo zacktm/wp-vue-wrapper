@@ -17,16 +17,12 @@
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
     "@babel/preset-env": "^7.12.16",
-    "@tailwindcss/postcss": "^4.0.14",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
     "autoprefixer": "^10.4.21",
     "babel-eslint": "^10.1.0",
-    "daisyui": "^5.0.4",
     "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^4.0.14"
+    "eslint-plugin-vue": "^8.0.3"
   }
 }
