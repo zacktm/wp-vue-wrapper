@@ -29,37 +29,46 @@ function vue_wp_app_enqueue_scripts() {
             return;
         }
     }
+
+    // Ensure settings script is enqueued first
+    wp_enqueue_script('vue-wp-settings-js');
+    
     if (VUE_APP_DEV_MODE) {
         // Development mode - use webpack dev server
-        wp_enqueue_script(
+        wp_register_script(
             'vue-wp-app-js',
             'http://localhost:8080/js/app.js',
-            array(),
+            array('vue-wp-settings-js'), // Make settings a dependency
             null,
             true
         );
-
-        // Add CORS headers for development
-        header('Access-Control-Allow-Origin: *');
         
+        wp_enqueue_script('vue-wp-app-js');
+
         // Add debug message to help verify script loading
-        error_log('Vue app script enqueued in dev mode');
+        if (WP_DEBUG) {
+            error_log('Vue app script enqueued in dev mode');
+        }
     } else {
         // Production mode - use built files
-        wp_enqueue_script(
+        wp_register_script(
             'vue-wp-app-js',
             VUE_WP_APP_URL . 'dist/js/app.js',
-            array(),
+            array('vue-wp-settings-js'), // Make settings a dependency
             '1.0.0',
-            false  // Changed to false to load in header
+            true  // Load in footer
         );
+        
+        wp_enqueue_script('vue-wp-app-js');
 
-        wp_enqueue_style(
+        wp_register_style(
             'vue-wp-app-css',
             VUE_WP_APP_URL . 'dist/css/app.css',
             array(),
             '1.0.0'
         );
+        
+        wp_enqueue_style('vue-wp-app-css');
     }
 
     // Add this to make sure the nonce is available in the Vue app
@@ -71,9 +80,10 @@ function vue_wp_app_enqueue_scripts() {
 
 // Hook for frontend
 if (VUE_APP_ENABLE_FRONTEND) {
-add_action('wp_enqueue_scripts', 'vue_wp_app_enqueue_scripts');
+    add_action('wp_enqueue_scripts', 'vue_wp_app_enqueue_scripts');
 }
-if (VUE_APP_ENABLE_BACKEND) {
+
 // Hook for admin
-add_action('admin_enqueue_scripts', 'vue_wp_app_enqueue_scripts'); 
+if (VUE_APP_ENABLE_BACKEND) {
+    add_action('admin_enqueue_scripts', 'vue_wp_app_enqueue_scripts'); 
 }

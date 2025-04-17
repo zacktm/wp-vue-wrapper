@@ -18,8 +18,8 @@ function vue_wp_app_admin_menu() {
 
     // Add main menu page
     add_menu_page(
-        'Vue WP App',           // Page title
-        'Vue WP App',           // Menu title
+        esc_html__('Vue WP App', 'wp-vue-wrapper'),           // Page title
+        esc_html__('Vue WP App', 'wp-vue-wrapper'),           // Menu title
         'manage_options',       // Capability required
         VUE_APP_MENU_SLUG,     // Menu slug
         'vue_wp_app_page',     // Callback function
@@ -35,8 +35,8 @@ function vue_wp_app_admin_menu() {
         if ($slug !== VUE_APP_MENU_SLUG) {
             add_submenu_page(
                 VUE_APP_MENU_SLUG,    // Parent slug
-                $item['title'],        // Page title
-                $item['title'],        // Menu title
+                esc_html($item['title']),        // Page title
+                esc_html($item['title']),        // Menu title
                 'manage_options',       // Capability
                 $slug,                 // Menu slug
                 'vue_wp_app_page'      // Callback function
@@ -46,15 +46,22 @@ function vue_wp_app_admin_menu() {
 }
 add_action('admin_menu', 'vue_wp_app_admin_menu');
 
-// Callback function to display the plugin page
+/**
+ * Callback function to display the plugin page
+ */
 function vue_wp_app_page() {
-    ?>
-    <div class="wrap">
-        <h1>Vue WP App</h1>
-        <div id="vue-wp-app-container">
-            <!-- Vue app will mount here -->
-            <div id="vue-wp-app"></div>
-        </div>
-    </div>
-    <?php
+    // Ensure settings script is enqueued first
+    wp_enqueue_script('vue-wp-settings-js');
+    
+    // Then enqueue Vue app scripts
+    wp_enqueue_script('vue-wp-app-js');
+    wp_enqueue_style('vue-wp-app-css');
+    
+    echo '<div class="wrap">';
+    echo '<h1>' . esc_html__('Vue WP App', 'wp-vue-wrapper') . '</h1>';
+    echo '<div id="vue-wp-app-container">';
+    echo '<!-- Vue app will mount here -->';
+    echo '<div id="vue-wp-app"></div>';
+    echo '</div>'; // Close container
+    echo '</div>'; // Close wrap
 } 

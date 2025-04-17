@@ -1,6 +1,5 @@
 const { defineConfig } = require('@vue/cli-service')
 const webpack = require('webpack')
-require('dotenv').config()
 
 module.exports = defineConfig({
   transpileDependencies: true,
@@ -31,22 +30,10 @@ module.exports = defineConfig({
       filename: 'js/app.js',
       chunkFilename: 'js/[name].js'
     },
-    devtool: 'source-map',
-    plugins: [
-      new webpack.DefinePlugin({
-        'process.env.VUE_APP_ENABLE_FRONTEND': JSON.stringify(process.env.VUE_APP_ENABLE_FRONTEND),
-        'process.env.VUE_APP_ENABLE_BACKEND': JSON.stringify(process.env.VUE_APP_ENABLE_BACKEND),
-        'process.env.VUE_APP_DEV_MODE': JSON.stringify(process.env.VUE_APP_DEV_MODE)
-      })
-    ]
+    devtool: 'source-map'
   },
   css: {
-    extract: false, // This will include CSS in the main bundle
-    loaderOptions: {
-      postcss: {
-        // PostCSS options are now in postcss.config.js
-      }
-    }
+    extract: false // This will include CSS in the main bundle
   },
   publicPath: process.env.NODE_ENV === 'production'
     ? '/wp-content/plugins/smart-press-pro/dist/'

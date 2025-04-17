@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 class SmartPress_Custom_Fields {
     
     private static $instance = null;
-    private $option_name = VUE_APP_MENU_SLUG . '_custom_fields';
+    private $option_name = '';
     private $fields = array();
     
     /**
@@ -30,6 +30,9 @@ class SmartPress_Custom_Fields {
      * Constructor
      */
     private function __construct() {
+        // Set option name using the defined menu slug
+        $this->option_name = VUE_APP_MENU_SLUG . '_custom_fields';
+        
         // Define fields
         $this->fields = array(
             array('name' => 'email', 'type' => 'string', 'default' => 'dummyEmail@gmail.com'),
@@ -38,7 +41,6 @@ class SmartPress_Custom_Fields {
             array('name' => 'is_guest', 'type' => 'boolean', 'default' => true),
             array('name' => 'license', 'type' => 'string', 'default' => 'dummyLicense')
         );
-        
         
         // Register settings
         add_action('admin_init', array($this, 'register_settings'));
@@ -56,7 +58,7 @@ class SmartPress_Custom_Fields {
             $this->option_name,
             array(
                 'type' => 'array',
-                'description' => 'Custom fields for '.VUE_APP_MENU_SLUG,
+                'description' => 'Custom fields for ' . esc_html(VUE_APP_MENU_SLUG),
                 'sanitize_callback' => array($this, 'sanitize_custom_fields'),
                 'default' => $this->get_default_fields(),
             )
@@ -199,7 +201,11 @@ class SmartPress_Custom_Fields {
     public function api_update_fields($request) {
         $fields = $request->get_json_params();
         if (!is_array($fields)) {
-            return new WP_Error('invalid_fields', 'Fields must be provided as an object', array('status' => 400));
+            return new WP_Error(
+                'invalid_fields', 
+                esc_html__('Fields must be provided as an object', 'wp-vue-wrapper'), 
+                array('status' => 400)
+            );
         }
         
         $this->update_fields($fields);

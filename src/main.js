@@ -1,7 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import './assets/tailwind.css'
 
 // Near the top of the file, add a timestamp for debugging
 const initTime = new Date().toISOString();
@@ -9,11 +8,13 @@ const initTime = new Date().toISOString();
 // Check if we're in WordPress admin area
 const isWordPressAdmin = window.location.href.includes('/wp-admin/')
 
-// Check environment settings
-const enableFrontend = process.env.VUE_APP_ENABLE_FRONTEND === 'true'
-const enableBackend = process.env.VUE_APP_ENABLE_BACKEND === 'true'
-const enableDebug = process.env.VUE_APP_ENABLE_DEBUG === 'true'
+// Get settings from WordPress
+const wpSettings = window.vueWpSettings || {}
 
+// Check environment settings from WordPress
+const enableFrontend = wpSettings.enableFrontend || false
+const enableBackend = wpSettings.enableBackend || false
+const enableDebug = wpSettings.debugMode || false
 
 // Define initVueApp at the root level
 function initVueApp() {

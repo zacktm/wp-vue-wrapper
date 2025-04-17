@@ -27,7 +27,7 @@ function vue_wp_app_localize_settings() {
         'enableBackend' => VUE_APP_ENABLE_BACKEND,
         'enableBackendGlobal' => VUE_APP_ENABLE_BACKEND_GLOBAL,
         'devMode' => VUE_APP_DEV_MODE,
-        'debugMode' => vue_wp_app_get_env('VUE_APP_ENABLE_DEBUG', false),
+        'debugMode' => VUE_APP_ENABLE_DEBUG,
         'menuSlug' => VUE_APP_MENU_SLUG,
         'menuSlugs' => vue_wp_app_get_menu_slugs(),
         'baseSlug' => VUE_APP_MENU_SLUG,
@@ -36,17 +36,15 @@ function vue_wp_app_localize_settings() {
         'nonce' => wp_create_nonce('wp_rest')
     );
     
-    // Output settings as a global JavaScript variable
-    ?>
-    <script>
-        window.vueWpSettings = <?php echo json_encode($settings); ?>;
-    </script>
-    <?php
+    // Register settings script that will be a dependency for the Vue app
+    wp_register_script('vue-wp-settings-js', false);
+    
+    // Output settings as a global JavaScript variable using wp_add_inline_script and wp_json_encode
+    wp_add_inline_script('vue-wp-settings-js', 'window.vueWpSettings = ' . wp_json_encode($settings) . ';');
 }
 
-// Add settings before the Vue app is loaded
-add_action('admin_head', 'vue_wp_app_localize_settings');
-add_action('wp_head', 'vue_wp_app_localize_settings');
+// Initialize settings early
+add_action('init', 'vue_wp_app_localize_settings');
 
 /**
  * Register REST API endpoints for settings
@@ -79,7 +77,7 @@ function vue_wp_app_get_settings() {
         'enableBackend' => VUE_APP_ENABLE_BACKEND,
         'enableBackendGlobal' => VUE_APP_ENABLE_BACKEND_GLOBAL,
         'devMode' => VUE_APP_DEV_MODE,
-        'debugMode' => vue_wp_app_get_env('VUE_APP_DEBUG_MODE', false)
+        'debugMode' => VUE_APP_ENABLE_DEBUG
     );
     
     return rest_ensure_response($settings);
@@ -100,7 +98,7 @@ function vue_wp_app_update_settings($request) {
         'enableBackend' => isset($params['enableBackend']) ? (bool) $params['enableBackend'] : VUE_APP_ENABLE_BACKEND,
         'enableBackendGlobal' => isset($params['enableBackendGlobal']) ? (bool) $params['enableBackendGlobal'] : VUE_APP_ENABLE_BACKEND_GLOBAL,
         'devMode' => isset($params['devMode']) ? (bool) $params['devMode'] : VUE_APP_DEV_MODE,
-        'debugMode' => isset($params['debugMode']) ? (bool) $params['debugMode'] : vue_wp_app_get_env('VUE_APP_DEBUG_MODE', false)
+        'debugMode' => isset($params['debugMode']) ? (bool) $params['debugMode'] : VUE_APP_ENABLE_DEBUG
     );
     
     // In a real implementation, you would save these settings
