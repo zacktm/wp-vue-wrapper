@@ -13,11 +13,6 @@ if (!defined('ABSPATH')) {
  * Add settings to the page for Vue app to use
  */
 function vue_wp_app_localize_settings() {
-    // Only add settings on admin pages or frontend with shortcode
-    if (!is_admin() && !has_shortcode(get_post()->post_content ?? '', 'vue_wp_app')) {
-        return;
-    }
-    
     // Get menu configuration
     $menu_items = vue_wp_app_get_menu_config();
     
@@ -43,8 +38,9 @@ function vue_wp_app_localize_settings() {
     wp_add_inline_script('vue-wp-settings-js', 'window.vueWpSettings = ' . wp_json_encode($settings) . ';');
 }
 
-// Initialize settings early
-add_action('init', 'vue_wp_app_localize_settings');
+// Initialize settings on script enqueue hooks
+add_action('wp_enqueue_scripts', 'vue_wp_app_localize_settings');
+add_action('admin_enqueue_scripts', 'vue_wp_app_localize_settings');
 
 /**
  * Register REST API endpoints for settings

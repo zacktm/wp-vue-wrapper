@@ -23,11 +23,11 @@ define('VUE_WP_APP_URL', plugin_dir_url(__FILE__));
  * These settings are defined here instead of using a .env file
  * which is not a WordPress best practice.
  */
-define('VUE_APP_ENABLE_FRONTEND', false);        // Enable Vue on the frontend
+define('VUE_APP_ENABLE_FRONTEND', true);        // Enable Vue on the frontend
 define('VUE_APP_ENABLE_BACKEND', true);          // Enable Vue in the admin area
 define('VUE_APP_ENABLE_BACKEND_GLOBAL', true);   // Enable Vue globally in admin
 define('VUE_APP_DEV_MODE', true);                // Development mode
-define('VUE_APP_ENABLE_DEBUG', false);            // Enable debug logging
+define('VUE_APP_ENABLE_DEBUG', true);            // Enable debug logging
 define('VUE_APP_MENU_SLUG', 'vue-wp-app');       // Main menu slug
 
 /**
